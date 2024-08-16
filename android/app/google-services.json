@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "982006411920",
+    "project_id": "testingpolling-a3d03",
+    "storage_bucket": "testingpolling-a3d03.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:982006411920:android:a24cf9d903070f76be1e15",
+        "android_client_info": {
+          "package_name": "com.example.abc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDz7c1JJKv1mQiOK7Cc7OXymxmTBT3DNYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:982006411920:android:54c824e36e6967dabe1e15",
+        "android_client_info": {
+          "package_name": "com.example.teacher_live_class"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDz7c1JJKv1mQiOK7Cc7OXymxmTBT3DNYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:982006411920:android:87bba5a0d8050a75be1e15",
+        "android_client_info": {
+          "package_name": "com.example.teacher_polling"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDz7c1JJKv1mQiOK7Cc7OXymxmTBT3DNYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
