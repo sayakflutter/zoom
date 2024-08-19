@@ -9,7 +9,6 @@ import 'vc_controller.dart';
 import 'vc_methods.dart';
 import 'vc_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 
 class PreviewScreen extends StatefulWidget {
   const PreviewScreen({
@@ -151,7 +150,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
                                     await vcController.inMeetClient.join(
                                         sessionId: vcController
                                             .sessionIdController.text);
-                                    Get.off(() => MeetingPage());
+                                    // Get.off(() => MeetingPage());
                                     // Get.off(() => VcScreen(
                                     //     sessionId: vcController
                                     //         .sessionIdController.text));

@@ -137,7 +137,7 @@ class _StudentLiveClassLoginScreenState
                                   VcEventsAndMethods(vcController: controller));
                           await controller.inMeetClient
                               .join(sessionId: _sessionIDController.text);
-                          Get.off(() => MeetingPage());
+                          // Get.off(() => MeetingPage());
                           // If no errors, proceed with the login logic
                           // Example: _loginApi();
                         }

@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
 import 'package:inapi_core_sdk/inapi_core_sdk.dart';
 import 'package:intl/intl.dart';
+import 'package:teacher_live_class/createtopic.dart';
+import 'package:teacher_live_class/getx.dart';
 import 'package:teacher_live_class/vc_controller.dart';
 import 'package:teacher_live_class/widget/chatwidget.dart';
 import 'package:teacher_live_class/widget/teacherpoll.dart';
@@ -37,7 +38,10 @@ class GlassBox extends StatelessWidget {
 }
 
 class MeetingPage extends StatefulWidget {
-  const MeetingPage({super.key});
+  String? sessionId;
+  String userid;
+  String username;
+  MeetingPage(this.sessionId, this.userid, this.username, {super.key});
 
   @override
   State<MeetingPage> createState() => _MeetingPageState();
@@ -61,7 +65,7 @@ class _MeetingPageState extends State<MeetingPage> {
     'assets/image2.jpg',
     'assets/image9.jpg'
   ];
-  // Styles
+// Styles
   Color deviderColors = Color.fromARGB(255, 90, 90, 92);
   Color scaffoldColor = const Color(0xff1B1A1D);
   Color topTextColor = const Color(0xffDFDEDF);
@@ -74,15 +78,13 @@ class _MeetingPageState extends State<MeetingPage> {
 
   TextEditingController c = TextEditingController();
   String? selectedAudioOutputDevice;
-  final AudioPlayer _audioPlayer = AudioPlayer();
 
   Future<void> playSound() async {
     // Path to the .opus file in the assets folder
     final soundPath = 'sound.mp3';
 
     try {
-      // Load and play the .opus sound from the assets
-      await _audioPlayer.play(AssetSource(soundPath));
+      // Load and play the .opus sound from the assets   await _audioPlayer.play(AssetSource(soundPath));
     } catch (e) {
       print(soundPath);
       print('Error playing sound: $e');
@@ -91,6 +93,7 @@ class _MeetingPageState extends State<MeetingPage> {
 
   @override
   void initState() {
+    onUserJoinMeeting();
     if (vcController.audioOutput.isNotEmpty) {
       selectedAudioOutputDevice = vcController.audioOutput.first;
     }
@@ -98,6 +101,13 @@ class _MeetingPageState extends State<MeetingPage> {
       time.value = DateFormat('HH:mm:ss').format(DateTime.now());
     });
     super.initState();
+  }
+
+  void onUserJoinMeeting() async {
+    await MeetingService.joinMeeting(
+        widget.sessionId.toString(), widget.userid.toString(), widget.username);
+    print(
+        "User ${widget.username} (${widget.userid}) joined the meeting with session ID ${widget.sessionId}.");
   }
 
   @override
@@ -549,42 +559,56 @@ class _MeetingPageState extends State<MeetingPage> {
                       child: Padding(
                         padding:
                             EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                        child: SingleChildScrollView(
-                          child: Container(
-                            height: MediaQuery.of(context).size.height,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CustomExpansionTile(
-                                  title: 'Topic',
-                                  initiallyExpanded:
-                                      true, // Set to true to start expanded
-                                  child: Container(),
-                                ),
-                                CustomExpansionTile(
-                                  title: 'Chat',
-                                  initiallyExpanded:
-                                      false, // Set to true to start expanded
-                                  child: Container(
-                                    height: MediaQuery.of(context).size.height -
-                                        300,
-                                    child: ChatUi(),
+                        child: Container(
+                          height: MediaQuery.of(context).size.height,
+                          child: SingleChildScrollView(
+                            child: Container(
+                              // height: MediaQuery.of(context).size.height - 90,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CustomExpansionTile(
+                                    title: 'Topic',
+                                    initiallyExpanded:
+                                        false, // Set to true to start expanded
+                                    child: SizedBox(
+                                        height:
+                                            MediaQuery.of(context).size.height -
+                                                300,
+                                        child: TopicListPage(
+                                          sessionId:
+                                              widget.sessionId.toString(),
+                                        )),
                                   ),
-                                ),
-                                CustomExpansionTile(
-                                  title: 'Poll',
-                                  initiallyExpanded:
-                                      true, // Set to true to start expanded
-                                  child: Container(
-                                    height: MediaQuery.of(context).size.height -
-                                        300,
-                                    child: TeacherPollPage(
-                                      teacherName: 'Sayak Mishra',
+                                  CustomExpansionTile(
+                                    title: 'Chat',
+                                    initiallyExpanded:
+                                        false, // Set to true to start expanded
+                                    child: Container(
+                                      height:
+                                          MediaQuery.of(context).size.height -
+                                              300,
+                                      child: ChatUi(
+                                          widget.sessionId, widget.userid),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  CustomExpansionTile(
+                                    title: 'Poll',
+                                    initiallyExpanded:
+                                        true, // Set to true to start expanded
+                                    child: Container(
+                                      height:
+                                          MediaQuery.of(context).size.height -
+                                              300,
+                                      child: TeacherPollPage(
+                                        teacherName: 'Sayak Mishra',
+                                        sessionId: widget.sessionId.toString(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

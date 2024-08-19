@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TeacherPollPage extends StatefulWidget {
   final String teacherName;
-
-  TeacherPollPage({required this.teacherName});
+  String sessionId;
+  TeacherPollPage({required this.teacherName, required this.sessionId});
 
   @override
   _TeacherPollPageState createState() => _TeacherPollPageState();
@@ -74,6 +74,7 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
       'votes': optionsMap,
       'createdBy': widget.teacherName,
       'pollId': pollId,
+      'sessionId': widget.sessionId, // Store the session ID here
     });
 
     setState(() {
@@ -104,17 +105,57 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
     }
   }
 
-  void _voteForOption(String optionId) async {
-    if (hasVoted) return;
+  void _voteForOption(String selectedOptionId) async {
+    if (_selectedPollId == null) return;
 
-    await _firestore.collection('polls').doc(_selectedPollId).update({
-      'votes.$optionId': FieldValue.increment(1),
-      'voters.$optionId': FieldValue.arrayUnion([widget.teacherName]),
-    });
+    final pollDoc =
+        await _firestore.collection('polls').doc(_selectedPollId).get();
+    final pollData = pollDoc.data() as Map<String, dynamic>;
+    final voters = pollData['voters'] as Map<String, dynamic>? ?? {};
 
-    setState(() {
-      hasVoted = true;
-    });
+    // Check if the teacher has already voted for this option
+    final hasAlreadyVotedForThisOption =
+        (voters[selectedOptionId] as List?)?.contains(widget.teacherName) ??
+            false;
+
+    if (hasAlreadyVotedForThisOption) {
+      // If the teacher has already voted for this option, remove the vote
+      await _firestore.collection('polls').doc(_selectedPollId).update({
+        'votes.$selectedOptionId': FieldValue.increment(-1),
+        'voters.$selectedOptionId':
+            FieldValue.arrayRemove([widget.teacherName]),
+      });
+
+      setState(() {
+        hasVoted = false;
+      });
+    } else {
+      // Remove vote from any other option if the teacher has voted elsewhere
+      String? previousOptionId;
+      voters.forEach((optionId, voterList) {
+        if ((voterList as List).contains(widget.teacherName)) {
+          previousOptionId = optionId;
+        }
+      });
+
+      if (previousOptionId != null && previousOptionId != selectedOptionId) {
+        await _firestore.collection('polls').doc(_selectedPollId).update({
+          'votes.$previousOptionId': FieldValue.increment(-1),
+          'voters.$previousOptionId':
+              FieldValue.arrayRemove([widget.teacherName]),
+        });
+      }
+
+      // Add the new vote for the selected option
+      await _firestore.collection('polls').doc(_selectedPollId).update({
+        'votes.$selectedOptionId': FieldValue.increment(1),
+        'voters.$selectedOptionId': FieldValue.arrayUnion([widget.teacherName]),
+      });
+
+      setState(() {
+        hasVoted = true;
+      });
+    }
   }
 
   double _calculatePercentage(int votes, int totalVotes) {
@@ -125,260 +166,253 @@ class _TeacherPollPageState extends State<TeacherPollPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Expanded(
-        child: SingleChildScrollView(
-          child: Container(
-            height: MediaQuery.sizeOf(context).height,
-            decoration: BoxDecoration(
-              // borderRadius: BorderRadius.circular(10),
-              color: Color.fromARGB(255, 44, 44, 44),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('Create Poll',
-                      style: TextStyle(fontSize: 20, color: Colors.white)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: _pollQuestionController,
-                    decoration: InputDecoration(
-                      fillColor: Colors.white,
-                      filled: true,
-                      hintText: 'Poll Question',
-                      border: OutlineInputBorder(
-                          borderSide: BorderSide.none,
-                          borderRadius: BorderRadius.circular(
-                            5,
-                          )),
-                    ),
+      body: SingleChildScrollView(
+        child: Container(
+          height: MediaQuery.sizeOf(context).height,
+          decoration: BoxDecoration(
+            color: Color.fromARGB(255, 44, 44, 44),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('Create Poll',
+                    style: TextStyle(fontSize: 20, color: Colors.white)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  controller: _pollQuestionController,
+                  decoration: InputDecoration(
+                    fillColor: Colors.white,
+                    filled: true,
+                    hintText: 'Poll Question',
+                    border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.circular(
+                          5,
+                        )),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Column(
-                    children: _optionControllers
-                        .asMap()
-                        .entries
-                        .map(
-                          (entry) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Container(
-                              height: 70,
-                              // width: 300,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: TextField(
-                                  controller: entry.value,
-                                  decoration: InputDecoration(
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        Icons.remove_circle,
-                                        // size: 3,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () =>
-                                          removeOptionField(entry.key),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Column(
+                  children: _optionControllers
+                      .asMap()
+                      .entries
+                      .map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Container(
+                            height: 70,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: TextField(
+                                controller: entry.value,
+                                decoration: InputDecoration(
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      Icons.remove_circle,
+                                      color: Colors.red,
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(
-                                        vertical: 5, horizontal: 5),
-                                    fillColor: Colors.white,
-                                    filled: true,
-                                    hintText: 'Option ${entry.key + 1}',
-                                    border: OutlineInputBorder(
-                                        borderSide: BorderSide.none,
-                                        borderRadius: BorderRadius.circular(
-                                          5,
-                                        )),
+                                    onPressed: () =>
+                                        removeOptionField(entry.key),
                                   ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      vertical: 5, horizontal: 5),
+                                  fillColor: Colors.white,
+                                  filled: true,
+                                  hintText: 'Option ${entry.key + 1}',
+                                  border: OutlineInputBorder(
+                                      borderSide: BorderSide.none,
+                                      borderRadius: BorderRadius.circular(
+                                        5,
+                                      )),
                                 ),
                               ),
                             ),
                           ),
-                        )
-                        .toList(),
-                  ),
+                        ),
+                      )
+                      .toList(),
                 ),
-                Row(
-                  children: [
-                    Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: MaterialButton(
-                          padding: EdgeInsets.all(15),
-                          color: const Color.fromARGB(255, 6, 124, 221),
-                          onPressed: () {
-                            addOptionField();
-                          },
-                          child: Text(
-                            'Add Option',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        )),
-                    Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: MaterialButton(
-                          padding: EdgeInsets.all(15),
-                          color: const Color.fromARGB(255, 6, 124, 221),
-                          onPressed: () {
-                            createPoll();
-                          },
-                          child: Text(
-                            'Create Poll',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        )),
-                  ],
-                ),
-                StreamBuilder<QuerySnapshot>(
-                  stream: _firestore.collection('polls').snapshots(),
+              ),
+              Row(
+                children: [
+                  Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: MaterialButton(
+                        padding: EdgeInsets.all(15),
+                        color: const Color.fromARGB(255, 6, 124, 221),
+                        onPressed: () {
+                          addOptionField();
+                        },
+                        child: Text(
+                          'Add Option',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      )),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: MaterialButton(
+                        padding: EdgeInsets.all(15),
+                        color: const Color.fromARGB(255, 6, 124, 221),
+                        onPressed: () {
+                          createPoll();
+                        },
+                        child: Text(
+                          'Create Poll',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      )),
+                ],
+              ),
+              StreamBuilder<QuerySnapshot>(
+                stream: _firestore
+                    .collection('polls')
+                    .where('sessionId',
+                        isEqualTo: widget.sessionId) // Filter by session ID
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  final polls = snapshot.data!.docs;
+
+                  if (polls.isEmpty) {
+                    return Center(child: Text('No polls available.'));
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: polls.length,
+                    itemBuilder: (context, index) {
+                      final poll = polls[index];
+                      final pollId = poll['pollId'];
+                      final pollQuestion = poll['question'] ?? 'No Question';
+                      final pollOptions =
+                          (poll['votes'] as Map<String, dynamic>)
+                              .entries
+                              .map((entry) {
+                        return PollOption(
+                          id: entry.key,
+                          title: entry.key,
+                          votes: entry.value as int,
+                        );
+                      }).toList();
+
+                      return ListTile(
+                        title: Text(
+                          pollQuestion,
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          'Created by: ${poll['createdBy'] ?? 'Unknown'}',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        onTap: () async {
+                          if (pollOptions.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(
+                                      'This poll has no options available.')),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            _selectedPollId = pollId;
+                            _pollQuestion = pollQuestion;
+                          });
+                          await checkIfTeacherVoted();
+                        },
+                        selected: pollId == _selectedPollId,
+                        trailing: Icon(
+                          Icons.poll,
+                          color: Colors.blue,
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              if (_selectedPollId != null) ...[
+                StreamBuilder<DocumentSnapshot>(
+                  stream: _firestore
+                      .collection('polls')
+                      .doc(_selectedPollId)
+                      .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return Center(child: CircularProgressIndicator());
                     }
 
-                    final polls = snapshot.data!.docs;
-
-                    if (polls.isEmpty) {
-                      return Center(child: Text('No polls available.'));
+                    final pollData =
+                        snapshot.data!.data() as Map<String, dynamic>?;
+                    if (pollData == null || !pollData.containsKey('votes')) {
+                      return Center(
+                          child: Text('Poll data is missing or incomplete.'));
                     }
 
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: polls.length,
-                      itemBuilder: (context, index) {
-                        final poll = polls[index];
-                        final pollId = poll['pollId'];
-                        final pollQuestion = poll['question'] ?? 'No Question';
-                        final pollOptions =
-                            (poll['votes'] as Map<String, dynamic>)
-                                .entries
-                                .map((entry) {
-                          return PollOption(
-                            id: entry.key,
-                            title: entry.key,
-                            votes: entry.value
-                                as int, // Ensure votes are treated as int
-                          );
-                        }).toList();
+                    final votes = pollData['votes'] as Map<String, dynamic>;
+                    final totalVotes = votes.values.fold<int>(
+                        0, (a, b) => a + (b as int)); // Sum up the total votes
+                    final pollOptions = votes.entries.map((entry) {
+                      final percentage =
+                          _calculatePercentage(entry.value as int, totalVotes);
+                      return PollOption(
+                        id: entry.key,
+                        title: entry.key,
+                        votes: entry.value as int,
+                        percentage: percentage,
+                      );
+                    }).toList();
 
-                        return ListTile(
-                          title: Text(
-                            pollQuestion,
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            'Created by: ${poll['createdBy'] ?? 'Unknown'}',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          onTap: () async {
-                            if (pollOptions.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text(
-                                        'This poll has no options available.')),
-                              );
-                              return;
-                            }
-                            setState(() {
-                              _selectedPollId = pollId;
-                              _pollQuestion = pollQuestion;
-                            });
-                            await checkIfTeacherVoted();
+                    if (pollOptions.isEmpty) {
+                      return Center(child: Text('No poll options available.'));
+                    }
+
+                    return Container(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Card(
+                        surfaceTintColor: Colors.white,
+                        elevation: 8,
+                        color: Colors.white,
+                        shadowColor: const Color.fromARGB(255, 139, 198, 247),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: pollOptions.length,
+                          itemBuilder: (context, index) {
+                            final option = pollOptions[index];
+                            return ListTile(
+                              title: Text(option.title),
+                              subtitle: Column(
+                                children: [
+                                  LinearProgressIndicator(
+                                    value: option.percentage,
+                                    backgroundColor: Colors.grey[300],
+                                    color: Colors.blue,
+                                    minHeight: 8,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ],
+                              ),
+                              trailing: Text('${option.votes} votes'),
+                              onTap: () {
+                                _voteForOption(option.id);
+                              },
+                              selected: hasVoted,
+                            );
                           },
-                          selected: pollId == _selectedPollId,
-                          trailing: Icon(
-                            Icons.poll,
-                            color: Colors.blue,
-                          ),
-                        );
-                      },
+                        ),
+                      ),
                     );
                   },
                 ),
-                if (_selectedPollId != null) ...[
-                  StreamBuilder<DocumentSnapshot>(
-                    stream: _firestore
-                        .collection('polls')
-                        .doc(_selectedPollId)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return Center(child: CircularProgressIndicator());
-                      }
-
-                      final pollData =
-                          snapshot.data!.data() as Map<String, dynamic>?;
-                      if (pollData == null || !pollData.containsKey('votes')) {
-                        return Center(
-                            child: Text('Poll data is missing or incomplete.'));
-                      }
-
-                      final votes = pollData['votes'] as Map<String, dynamic>;
-                      final totalVotes = votes.values.fold<int>(0,
-                          (a, b) => a + (b as int)); // Sum up the total votes
-                      final pollOptions = votes.entries.map((entry) {
-                        final percentage = _calculatePercentage(
-                            entry.value as int, totalVotes);
-                        return PollOption(
-                          id: entry.key,
-                          title: entry.key,
-                          votes: entry.value as int,
-                          percentage: percentage,
-                        );
-                      }).toList();
-
-                      if (pollOptions.isEmpty) {
-                        return Center(
-                            child: Text('No poll options available.'));
-                      }
-
-                      return Container(
-                        // height: 100,
-                        padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: Card(
-                          surfaceTintColor: Colors.white,
-                          elevation: 8,
-                          color: Colors.white,
-                          shadowColor: const Color.fromARGB(255, 139, 198, 247),
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: pollOptions.length,
-                            itemBuilder: (context, index) {
-                              final option = pollOptions[index];
-                              return ListTile(
-                                title: Text(option.title),
-                                subtitle: Column(
-                                  children: [
-                                    LinearProgressIndicator(
-                                      value: option.percentage,
-                                      backgroundColor: Colors.grey[300],
-                                      color: Colors.blue,
-                                      minHeight: 8,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    // SizedBox(height: 4),
-                                    // Text(
-                                    //     '${(option.percentage * 100).toStringAsFixed(1)}%'),
-                                  ],
-                                ),
-                                trailing: Text('${option.votes} votes'),
-                                onTap: () {
-                                  _voteForOption(option.id);
-                                },
-                                selected: hasVoted,
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
               ],
-            ),
+            ],
           ),
         ),
       ),
@@ -392,9 +426,10 @@ class PollOption {
   int votes;
   double percentage;
 
-  PollOption(
-      {required this.id,
-      required this.title,
-      this.votes = 0,
-      this.percentage = 0.0});
+  PollOption({
+    required this.id,
+    required this.title,
+    this.votes = 0,
+    this.percentage = 0.0,
+  });
 }

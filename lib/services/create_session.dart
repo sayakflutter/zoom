@@ -37,8 +37,8 @@ class Services {
     }
   }
 
-  static String getUid(String mail) {
-    final bytes = utf8.encode(mail);
+  static String getUid(String key) {
+    final bytes = utf8.encode(key);
     final base64Uid = base64.encode(bytes);
     return base64Uid;
   }
