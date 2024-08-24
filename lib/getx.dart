@@ -86,7 +86,7 @@ class Getx extends GetxController {
         return const Center(child: CircularProgressIndicator());
       },
     );
-    print(selectedPackagesString.toString());
+
     var data = {
       "tblEncryptionHistory": {
         "VideoCategory": videoCategory.toString(),
@@ -106,7 +106,7 @@ class Getx extends GetxController {
         // "ProjectId": "project123"
       }
     };
-    print(data);
+    // print);
 
     try {
       var res = await http.post(
@@ -117,8 +117,11 @@ class Getx extends GetxController {
         },
         body: jsonEncode(data),
       );
-
-      print(res.body);
+      var josndata = jsonDecode(res.body);
+      if (josndata['statusCode'] == 200) {
+        Get.back();
+      } else {}
+      print(res.statusCode);
       Get.back();
 
       // if (res.statusCode == 200) {
@@ -220,7 +223,7 @@ class MeetingService {
 
     await ref.set({
       'users': FieldValue.arrayUnion([
-        {'userId': userId, 'userName': userName}
+        {'userId': userId, 'userName': userName, 'Type': 'Teacher'}
       ]),
     }, SetOptions(merge: true));
   }

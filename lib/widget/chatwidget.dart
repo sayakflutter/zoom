@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:teacher_live_class/widget/groupchat.dart';
 import 'package:teacher_live_class/widget/personchat.dart';
 
 class ChatUi extends StatefulWidget {
@@ -18,7 +20,11 @@ class _ChatUiState extends State<ChatUi> {
   void initState() {
     super.initState();
     chattype = [
-      const GroupChat(),
+      GroupChatScreen(
+        sessionId: widget.sessionId.toString(),
+        userId: widget.userid,
+        userName: 'Sayak',
+      ),
       PersonChat(
         sessionId: widget.sessionId ?? '',
         userid: widget.userid,
@@ -105,69 +111,33 @@ class _ChatUiState extends State<ChatUi> {
   }
 }
 
-class GroupChat extends StatefulWidget {
-  const GroupChat({super.key});
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: 'Group Chat',
+//       theme: ThemeData(
+//         primarySwatch: Colors.blue,
+//       ),
+//       home: GroupChatScreen(
+//         sessionId: 'example-session-id',
+//         userId: 'example-user-id',
+//         userName: 'example-user-name',
+//       ),
+//     );
+//   }
+// }
 
-  @override
-  State<GroupChat> createState() => _GroupChatState();
-}
 
-class _GroupChatState extends State<GroupChat> {
-  final TextEditingController _controller = TextEditingController();
+// class MeetingService {
+//   static Future<void> joinMeeting(
+//       String sessionId, String userId, String userName) async {
+//     final ref = FirebaseFirestore.instance.collection("meetings").doc(sessionId);
 
-  void _sendMessage() {
-    // Handle message sending logic here
-    _controller.clear();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                // Replace with your list of messages
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  child: const Text(
-                    'Messages will appear here...',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Type your message',
-                    hintStyle: const TextStyle(color: Colors.white70),
-                    filled: true,
-                    fillColor: Colors.white24,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
-                onPressed: _sendMessage,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
+//     await ref.set({
+//       'users': FieldValue.arrayUnion([
+//         {'userId': userId, 'userName': userName}
+//       ]),
+//     }, SetOptions(merge: true));
+//   }
+// }

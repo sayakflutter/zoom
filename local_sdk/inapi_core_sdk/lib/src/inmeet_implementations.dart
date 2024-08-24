@@ -936,7 +936,7 @@ class InMeetClient {
 
   Future<void> createScreenShareStream() async {
     if (WebRTC.platformIsWindows) {
-      await nav.desktopCapturer.getSources(types: [SourceType.Screen]);
+      await nav.desktopCapturer.getSources(types: [SourceType.Window]);
     }
     final mediaConstraints1 = <String, dynamic>{
       'audio': true,
@@ -948,6 +948,7 @@ class InMeetClient {
       await navigator.mediaDevices
           .getDisplayMedia(mediaConstraints1)
           .then((value) {
+        log(value.ownerTag);
         localScreenShareStream = value;
         _enableWebcam("screen");
 

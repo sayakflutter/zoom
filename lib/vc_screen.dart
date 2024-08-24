@@ -78,6 +78,7 @@ class _MeetingPageState extends State<MeetingPage> {
 
   TextEditingController c = TextEditingController();
   String? selectedAudioOutputDevice;
+  String? selectedVideoOutputDevice;
 
   Future<void> playSound() async {
     // Path to the .opus file in the assets folder
@@ -94,16 +95,23 @@ class _MeetingPageState extends State<MeetingPage> {
   @override
   void initState() {
     onUserJoinMeeting();
+
     if (vcController.audioOutput.isNotEmpty) {
       selectedAudioOutputDevice = vcController.audioOutput.first;
     }
-    timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
-      time.value = DateFormat('HH:mm:ss').format(DateTime.now());
-    });
+    timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (Timer t) {
+        time.value = DateFormat('HH:mm:ss').format(DateTime.now());
+      },
+    );
     super.initState();
   }
 
   void onUserJoinMeeting() async {
+    print(vcController.videoInputs);
+    final device = await InMeetClient.instance.getAvailableDeviceInfo();
+    log(device.toString());
     await MeetingService.joinMeeting(
         widget.sessionId.toString(), widget.userid.toString(), widget.username);
     print(
@@ -113,6 +121,19 @@ class _MeetingPageState extends State<MeetingPage> {
   @override
   void dispose() {
     timer?.cancel();
+    if (vcController.selfRole.contains(ParticipantRoles.moderator)) {
+      inMeetClient.endMeetingForAll();
+      inMeetClient.endBreakoutRooms();
+      vcController.isBreakoutStarted = false;
+    } else {
+      inMeetClient.exitMeeting();
+      inMeetClient.disableWebcam();
+
+      print('object');
+    }
+    Get.delete<VcController>(force: true);
+    vcController.localRenderer?.dispose();
+    super.dispose();
     super.dispose();
   }
 
@@ -697,33 +718,66 @@ class _MeetingPageState extends State<MeetingPage> {
                           ),
                         ),
                       const SizedBox(width: 12),
-                      FloatingActionButton.small(
-                        shape: ContinuousRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        heroTag: 'video',
-                        backgroundColor:
-                            vcController.cameraStreamStatus == ButtonStatus.off
-                                ? Colors.red
-                                : bottomBoxColor,
-                        onPressed: () async {
-                          try {
-                            vcController
-                                .changeCameraSreamStatus(ButtonStatus.loading);
-                            if (vcController.localRenderer == null) {
-                              await inMeetClient.enableWebCam(
-                                  vcController.selectedVideoInputDeviceId);
-                            } else {
-                              await inMeetClient.disableWebcam();
-                              vcController.localRenderer = null;
-                            }
-                          } catch (e) {}
-                        },
-                        child: vcController.cameraStreamStatus ==
-                                ButtonStatus.on
-                            ? const Icon(Icons.videocam, color: Colors.white)
-                            : const Icon(Icons.videocam_off,
-                                color: Colors.white),
-                      ),
+                      if (vcController.videoInputs.isNotEmpty)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: DropdownButton<String>(
+                            iconEnabledColor: Colors.white,
+                            style: const TextStyle(color: Colors.white),
+                            dropdownColor: Colors.black,
+                            value: selectedVideoOutputDevice,
+                            underline:
+                                Container(), // This removes the underline
+                            items: vcController.videoInputs.map((e) {
+                              return DropdownMenuItem<String>(
+                                value: e,
+                                child: Text(
+                                  e,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedVideoOutputDevice = value;
+                              });
+                              vcController.selectDevice(DeviceType.videoInput,
+                                  selectedVideoOutputDevice.toString());
+                            },
+                          ),
+                        ),
+
+                      // FloatingActionButton.small(
+                      //   shape: ContinuousRectangleBorder(
+                      //       borderRadius: BorderRadius.circular(12)),
+                      //   heroTag: 'video',
+                      //   backgroundColor:
+                      //       vcController.cameraStreamStatus == ButtonStatus.off
+                      //           ? Colors.red
+                      //           : bottomBoxColor,
+                      //   onPressed: () async {
+                      //     // try {
+                      //     //   log(vcController.videoInputs.toString());
+                      //     //   vcController
+                      //     //       .changeCameraSreamStatus(ButtonStatus.loading);
+                      //     //   if (vcController.localRenderer == null) {
+                      //     //     await inMeetClient.enableWebCam(
+                      //     //         vcController.selectedVideoInputDeviceId);
+                      //     //   } else {
+                      //     //     await inMeetClient.disableWebcam();
+                      //     //     vcController.localRenderer = null;
+                      //     //   }
+                      //     // } catch (e) {}
+                      //   },
+                      //   child:
+                      // ),
                       const SizedBox(width: 12),
                       if (vcController.screenShareStatus != ButtonStatus.off)
                         FloatingActionButton.small(
@@ -784,18 +838,7 @@ class _MeetingPageState extends State<MeetingPage> {
                                 borderRadius:
                                     BorderRadiusDirectional.circular(12)),
                             onPressed: () {
-                              try {
-                                if (vcController.selfRole
-                                    .contains(ParticipantRoles.moderator)) {
-                                  inMeetClient.endMeetingForAll();
-                                  inMeetClient.endBreakoutRooms();
-                                  vcController.isBreakoutStarted = false;
-                                } else {
-                                  inMeetClient.exitMeeting();
-                                }
-                                Get.delete<VcController>(force: true);
-                                Get.back();
-                              } catch (e) {}
+                              Get.back();
                             },
                             backgroundColor: micOffColor,
                             child: const Text(

@@ -25,10 +25,11 @@ class DevHttpOverrides extends HttpOverrides {
 void main(List<String> args) async {
   if (args.isNotEmpty)
     runApp(MyApp(args));
-  else
-    runApp(MyApp([
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJGaXJzdE5hbWUiOiJzYXlhayIsIkxhc3ROYW1lIjoibWlzaHJhIiwibmFtZWlkIjoiZjJmOTUxZWUtYzkyZS00YjYwLTllYTMtN2NhNTlmNWE2Y2JmIiwiRnJhbmNoaXNlSWQiOiIxIiwiTW9iaWxlIjoiOTc0OTA4ODQ3MiIsImVtYWlsIjoic2F5YWttaXNocmE5N0BnbWFpbC5jb20iLCJyb2xlIjoiU3R1ZGVudCIsIm5iZiI6MTcyMzg5MDAzMiwiZXhwIjoxNzI0MTA2MDMyLCJpYXQiOjE3MjM4OTAwMzJ9.xOkmsg8ZXEczTYHfO-XDTtyV_8ahCNqAVwHSwqwVW40'
+  else {
+    runApp(MyApp(const [
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJGaXJzdE5hbWUiOiJzYXlhayIsIkxhc3ROYW1lIjoibWlzaHJhIiwibmFtZWlkIjoiZjJmOTUxZWUtYzkyZS00YjYwLTllYTMtN2NhNTlmNWE2Y2JmIiwiRnJhbmNoaXNlSWQiOiIxIiwiTW9iaWxlIjoiOTc0OTA4ODQ3MiIsImVtYWlsIjoic2F5YWttaXNocmE5N0BnbWFpbC5jb20iLCJyb2xlIjoiU3R1ZGVudCIsIm5iZiI6MTcyNDM5MzY1NywiZXhwIjoxNzI0NjA5NjU3LCJpYXQiOjE3MjQzOTM2NTd9.8_ww1VYpMa0HHzjKPh8cVqfNYQX1NERJXk0jFQ7O6wk"
     ]));
+  }
 }
 
 // ignore: must_be_immutable

@@ -10,7 +10,7 @@ import 'package:teacher_live_class/vc_screen.dart';
 class DashboardUI extends StatefulWidget {
   final List<String> args;
 
-  DashboardUI(this.args);
+  const DashboardUI(this.args);
 
   @override
   _DashboardUIState createState() => _DashboardUIState();
@@ -239,7 +239,6 @@ class _DashboardUIState extends State<DashboardUI>
                   childAspectRatio =
                       1.0; // Adjust aspect ratio for very small screens
                 }
-
                 return GridView.builder(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
@@ -254,16 +253,18 @@ class _DashboardUIState extends State<DashboardUI>
                 );
               },
             )
-          : Center(child: CircularProgressIndicator()),
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 
   // Card Widget
   Widget _buildCard(MeetingDeatils meeting, BoxConstraints constraints) {
+    print(meeting.sessionId);
     final controller = Get.put(VcController(), permanent: true);
 
     final title = meeting.videoName;
     final package = meeting.packageName;
+
     final topic = meeting.topicName;
     final duration = '${meeting.videoDuration} minutes';
     final schedule = meeting.scheduledOn;

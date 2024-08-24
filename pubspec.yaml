@@ -38,6 +38,8 @@ dependencies:
   firebase_core:
   cloud_firestore:   
   shared_preferences: 2.2.3
+  emoji_picker_flutter: 2.2.0
+  emoji_selector: ^0.0.6
   
   # flutter_polls: ^0.1.6
   # better_polls:

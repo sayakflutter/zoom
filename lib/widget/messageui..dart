@@ -1,5 +1,8 @@
 // ignore_for_file: must_be_immutable, avoid_print
 
+import 'dart:developer';
+
+import 'package:emoji_selector/emoji_selector.dart';
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
@@ -113,7 +116,12 @@ class _MessageUiState extends State<MessageUi> {
                       }
                     },
                     controller: msgController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
+                        prefixIcon: EmojiSelector(
+                          onSelected: (p0) {
+                            log(p0.char);
+                          },
+                        ),
                         contentPadding: EdgeInsets.only(left: 20),
                         hintText: 'Type something...',
                         border:

@@ -1,7 +1,7 @@
 class MeetingDeatils {
   final String packageName;
-  final int packageId;
-  final int videoId;
+  final String packageId;
+  final String videoId;
   final String videoName;
   final int videoDuration;
   final String videoDescription;
@@ -35,9 +35,9 @@ class MeetingDeatils {
 
   factory MeetingDeatils.fromJson(Map<String, dynamic> json) {
     return MeetingDeatils(
-      packageName: json['PackageName'],
-      packageId: json['PackageId'],
-      videoId: json['VideoId'],
+      packageName: json['PackageNames'],
+      packageId: json['PackageIds'],
+      videoId: json['VideoIds'],
       videoName: json['VideoName'],
       videoDuration: json['VideoDuration'],
       videoDescription: json['VideoDescription'],
